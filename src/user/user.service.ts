@@ -13,7 +13,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserMapper } from './mapper/UserMapper';
 import { Message } from '../common/response/message';
 import { Role } from '../common/enum/role';
-import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { isObjectEmpty } from '../common/helpers';
 
 @Injectable()
@@ -58,7 +57,10 @@ export class UserService {
    * @throws HttpException If a user with the given email was found
    * @return {Promise<UserInfoDto>} The created user's data
    */
-  async create(newUserData: CreateUserDto, role?: Role): Promise<User> {
+  async create(
+    newUserData: CreateUserDto,
+    role: Role = Role.USER,
+  ): Promise<User> {
     const existing = await this.userRepository.findOneBy({
       email: newUserData.email,
     });
@@ -67,7 +69,11 @@ export class UserService {
         'A user with this email already exists',
         HttpStatus.BAD_REQUEST,
       );
-    const user = this.userRepository.create(newUserData);
+    const userCount = await this.userRepository.count();
+    if (userCount === 0) role = Role.ADMIN;
+    const user = this.userRepository.create(
+      Object.assign(newUserData, { role }),
+    );
     return this.userRepository.save(user);
   }
 
