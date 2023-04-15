@@ -24,6 +24,8 @@ export class Invoice {
 
   @Column({
     type: 'decimal',
+    precision: 4,
+    scale: 2,
     default: 0,
     nullable: false,
   })
