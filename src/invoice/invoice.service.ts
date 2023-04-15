@@ -149,8 +149,8 @@ export class InvoiceService {
         throw new BadRequestException(
           `Insufficient stock of item #${itemsEntities[i].id}`,
         );
-      itemsEntities[i].stock = availableQuantity - requiredQuantity;
-      itemTotalPrice = requiredQuantity * itemsEntities[i].price;
+      itemsEntities[i].stock = +availableQuantity - +requiredQuantity;
+      itemTotalPrice = +requiredQuantity * +itemsEntities[i].price;
       totalPrice += itemTotalPrice;
       const newInvoiceItem = new ItemToInvoice();
       newInvoiceItem.item = itemsEntities[i];
