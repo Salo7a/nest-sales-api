@@ -31,14 +31,21 @@ export class Invoice {
   total: number;
 
   @ManyToOne(() => User, (user) => user.invoices)
+  @Expose()
   user: User;
+
+  @Expose()
+  @Column({ nullable: false })
+  userId: number;
 
   @OneToMany(() => ItemToInvoice, (itemToInvoice) => itemToInvoice.invoice, {
     onDelete: 'CASCADE',
+    eager: false,
   })
   public itemToInvoice: ItemToInvoice[];
 
   @CreateDateColumn()
+  @Expose()
   public createdAt: Date;
 
   @UpdateDateColumn()

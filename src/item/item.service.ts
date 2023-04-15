@@ -1,16 +1,11 @@
 import {
   BadRequestException,
-  HttpException,
-  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Item } from './item.entity';
-import { CreateUserDto, UpdateUserDto } from '../user/dto';
-import { Role } from '../common/enum/role';
-import { User } from '../user/user.entity';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { ItemMapper } from './mapper/ItemMapper';
@@ -36,6 +31,11 @@ export class ItemService {
     return items;
   }
 
+  async findAllByIds(itemsIds: number[]): Promise<Item[]> {
+    const items = await this.itemRepository.findBy({ id: In(itemsIds) });
+    return items;
+  }
+
   async create(newItemData: CreateItemDto): Promise<Item> {
     const item = this.itemRepository.create(newItemData);
     return this.itemRepository.save(item);
@@ -46,6 +46,10 @@ export class ItemService {
     if (isObjectEmpty(updatedItemInfo))
       throw new BadRequestException('Invalid request');
     return this.itemRepository.save(Object.assign(item, updatedItemInfo));
+  }
+
+  async updateAll(items: Item[]) {
+    return await this.itemRepository.save(items);
   }
 
   async deleteById(id) {
