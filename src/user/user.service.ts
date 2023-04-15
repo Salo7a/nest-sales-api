@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -8,9 +9,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto';
-import { UpdateUserInfoDto } from './dto/update-user-info.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UserMapper } from './mapper/UserMapper';
 import { Message } from '../common/response/message';
+import { Role } from '../common/enum/role';
+import { isEmpty } from '@nestjs/common/utils/shared.utils';
+import { isObjectEmpty } from '../common/helpers';
 
 @Injectable()
 export class UserService {
@@ -54,7 +58,7 @@ export class UserService {
    * @throws HttpException If a user with the given email was found
    * @return {Promise<UserInfoDto>} The created user's data
    */
-  async create(newUserData: CreateUserDto): Promise<User> {
+  async create(newUserData: CreateUserDto, role?: Role): Promise<User> {
     const existing = await this.userRepository.findOneBy({
       email: newUserData.email,
     });
@@ -74,15 +78,49 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async updateUserInfo(id, updatedUserInfo: UpdateUserInfoDto) {
+  async updateUserRole(id: number, role: Role) {
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('User not found');
-    return this.userRepository.save({ id: user.id, ...updatedUserInfo });
+    if (user.role === Role.ADMIN && role !== Role.ADMIN) {
+      const adminsCount = await this.userRepository.countBy({
+        role: Role.ADMIN,
+      });
+      if (adminsCount === 1)
+        throw new BadRequestException(
+          "Can't demote an admin when only one exists!",
+        );
+    }
+    user.role = role;
+    return this.userRepository.save(user);
+  }
+
+  async updateUser(id, updatedUserInfo: UpdateUserDto) {
+    const user = await this.findById(id);
+    if (updatedUserInfo.email && updatedUserInfo.email !== user.email) {
+      const existing = await this.userRepository.findOneBy({
+        email: updatedUserInfo.email,
+      });
+      if (existing)
+        throw new HttpException(
+          'A user with this email already exists',
+          HttpStatus.BAD_REQUEST,
+        );
+    }
+    if (!user) throw new NotFoundException('User not found');
+    return this.userRepository.save(Object.assign(user, updatedUserInfo));
   }
 
   async deleteUserById(id) {
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('User not found');
+    if (user.role === Role.ADMIN) {
+      const adminsCount = await this.userRepository.countBy({
+        role: Role.ADMIN,
+      });
+      if (adminsCount === 1)
+        throw new BadRequestException("Can't delete the only admin");
+    }
+
     await this.userRepository.remove(user);
   }
 
@@ -96,13 +134,15 @@ export class UserService {
     return this.userMapper.entityToDto(user);
   }
 
-  async putUserInfo(
+  async updateUserInfo(
     id,
-    userInfo: UpdateUserInfoDto,
-  ): Promise<Message<UpdateUserInfoDto>> {
-    const updatedUser = await this.updateUserInfo(id, userInfo);
+    userInfo: CreateUserDto | UpdateUserDto,
+  ): Promise<Message<UpdateUserDto>> {
+    if (isObjectEmpty(userInfo))
+      throw new BadRequestException('Invalid request');
+    const updatedUser = await this.updateUser(id, userInfo);
     return new Message(
-      'User data updated successfully',
+      'User updated successfully',
       this.userMapper.entityToDto(updatedUser),
     );
   }
@@ -120,5 +160,10 @@ export class UserService {
   async deleteUser(id): Promise<Message> {
     await this.deleteUserById(id);
     return new Message(`User #${id} was deleted successfully`);
+  }
+
+  async patchUserRole(id, role: Role) {
+    await this.updateUserRole(id, role);
+    return new Message(`User #${id}'s role was successfully updated`);
   }
 }
