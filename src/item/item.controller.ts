@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Request,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ItemService } from './item.service';
@@ -15,10 +16,12 @@ import { ItemDto } from './dto/item.dto';
 import { CreateItemDto } from './dto/create-item.dto';
 import { Message } from '../common/response/message';
 import { UpdateItemDto } from './dto/update-item.dto';
+import { PageInfoInterceptor } from '../interceptors/page-info.interceptor';
 
 @ApiBearerAuth('JWT Token')
 @ApiTags('Item')
 @Controller('item')
+@UseInterceptors(PageInfoInterceptor)
 export class ItemController {
   constructor(private itemService: ItemService) {}
 

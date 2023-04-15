@@ -7,6 +7,7 @@ import {
   Patch,
   Put,
   Request,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiParam, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
@@ -16,10 +17,12 @@ import { Message } from '../common/response/message';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { HasAnyRole } from '../common/decorator/hasAnyRole';
 import { Role } from '../common/enum/role';
+import { PageInfoInterceptor } from '../interceptors/page-info.interceptor';
 
 @ApiTags('User')
 @ApiBearerAuth('JWT Token')
 @Controller('user')
+@UseInterceptors(PageInfoInterceptor)
 export class UserController {
   constructor(private userService: UserService) {}
 

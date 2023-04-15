@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Request,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -21,10 +22,12 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceDto } from './dto';
 import { Message } from '../common/response/message';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { PageInfoInterceptor } from '../interceptors/page-info.interceptor';
 
 @ApiBearerAuth()
 @ApiTags('Invoices')
 @Controller('invoice')
+@UseInterceptors(PageInfoInterceptor)
 export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 
